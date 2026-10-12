@@ -74,4 +74,48 @@ CREATE block
 RUN app
 ```
 
+## Entry 3: Calculate current savings balance
+The next step is to calculate the historical data uploaded by the user, for this we can use the simple logic shown below:
+- `current_balance = opening_balance + deposits + interest − withdrawals`
 
+The following is the pseudocode logic for the `current_balance()` function:
+```
+FUNCTION calculate_balance(data)
+    SET balance to 0
+
+    FOR each transaction in data
+        IF transaction type is withdrawal
+            SUBTRACT amount from balance
+        ELSE IF transaction type is opening_balance, deposit or interest
+            ADD amount to balance
+
+    RETURN balance
+```
+
+After implementing this we now need to display the calculated balance to the user.
+
+To implement this a helper method could be used to process the data for us by running `load_csv()` and `calculate_balance()`. 
+
+```
+FUNCTION process_csv(file_path)
+  CALL df = load_csv(file_path)
+  CALL balance = calculate_balance(df)
+
+  RETURN balance
+```
+
+Now we need to display this inside the Gradio app, this would require updating the Block to instead display "Current Balance ($)" instead of our preview for the loaded Dataframe we added for testing. 
+
+The updated pseudocode now looks like this:
+```
+CREATE Gradio app
+    ADD CSV upload
+    ADD current balance display
+
+    WHEN a CSV is uploaded
+        LOAD CSV into a DataFrame
+        CALCULATE balance using the DataFrame
+        DISPLAY current balance
+
+RUN app
+```
