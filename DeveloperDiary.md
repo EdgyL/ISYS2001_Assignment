@@ -230,3 +230,53 @@ with gr.Blocks() as app:
         y_title="Balance ($)",
     )
 ```
+
+## Entry 6: Calculate percentage of income contributed to savings
+
+For this component I want the user to enter their weekly take home income so the program can calculate what percentage they contribute to savings. This will use the average weekly contribution calculated from their historical CSV data.
+
+The logic for this would be:
+
+`contribution_percentage = (average_weekly_contribution / weekly_income) * 100`
+
+For example, if a user earns $1,000 per week and contributes an average of $200 to savings, their contribution percentage would be 20%. This assumes their entered weekly income is representative of the period covered by the CSV.
+
+The pseudocode for implementing this would look like:
+```
+FUNCTION calculate_contribution_percentage(weekly_average, weekly_income)
+    IF weekly_average or weekly_income is missing
+        RETURN no value
+
+    IF weekly_income is less than or equal to 0
+        RETURN no value
+
+    DIVIDE weekly_average by weekly_income
+    MULTIPLY result by 100
+
+    RETURN contribution percentage
+```
+
+I asked ChatGPT how to add a weekly income field and calculate the percentage contributed to savings. It suggested creating a separate calculation function and adding two Gradio number components: an editable field for weekly income and a read-only field for the calculated percentage.
+
+Unlike the previous calculations, this function needs both a value calculated from the CSV and a value entered by the user. Therefore, it needs to run when either of these inputs changes.
+
+The interface logic would look like:
+```
+ADD weekly income input
+ADD contribution percentage display
+
+WHEN weekly income changes
+    CALCULATE percentage using average weekly contribution and income
+    DISPLAY contribution percentage
+
+WHEN average weekly contribution changes
+    CALCULATE percentage using average weekly contribution and income
+    DISPLAY contribution percentage
+```
+ChatGPT suggested using `.change()` events for both inputs. This means the percentage can update when the user changes their income or uploads a different CSV.
+
+To check the calculation, I will test an average weekly contribution of $200 with a weekly income of $1,000 and expect a result of 20%. I will also check that missing income or an income of zero leaves the percentage blank, preventing division by zero.
+
+Below you can see a sample input I tested:
+
+<img width="1871" height="637" alt="image" src="https://github.com/user-attachments/assets/2a41654e-bb14-42bd-8a31-90b2e7f5f06a" />
