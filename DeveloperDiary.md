@@ -189,4 +189,44 @@ After that we then add the new variable into our `csv_upload.upload()` function 
 We can essentially repeat this workflow of adding a new function that calculates some number based on the Dataframe, we add that function to our `process_csv()` function and then reference it in the Gradio block to see in the UI.
 
 
+## Entry 5: Display graph of users account history
+For this component I wanted to add a way for the user to see how their savings have tracked based on their historical data provided in the CSV. Therefore I needed to code a function that could compile and organise the users transaction history into a seperate Dataframe which could be used to display on a line graph.
 
+```
+FUNCTION calculate_balance_history(df)
+    CONVERT date column into dates
+    SORT transactions from earliest to latest
+
+    SET balance to 0
+    CREATE empty history list
+
+    FOR each transaction
+        IF transaction type is withdrawal
+            SUBTRACT amount from balance
+        ELSE IF transaction type is opening_balance, deposit or interest
+            ADD amount to balance
+
+        ADD transaction date and updated balance to history
+
+    CONVERT history into a DataFrame
+    RETURN history DataFrame
+```
+
+Initially, I used a dictionary for the history variable, with transaction dates as the keys. After implementing it, I asked ChatGPT, “Are there any cases where this implementation could cause an error?” ChatGPT explained that multiple transactions on the same date would use the same dictionary key, causing later balances to overwrite earlier ones. This would not cause the program to crash, but it would prevent the history from retaining a balance for every transaction.
+I changed history to a list of dictionaries so each transaction could have its own date and balance entry, including transactions that share the same date.
+
+After this I added the new function into the `process_csv()` function and exported the variable. Now I needed to display this Dataframe on the Gradio dashboard, since this was a seperate section to the previous data I wanted to seperate it. Therefore I asked ChatGPT "How can I change the dashboard to display the first two variable in section at the top and then the graph in a section below it {entered my Gradio dashboard code}." ChatGPT suggested placing the two number displays inside `gr.Row()` and defining the graph underneath, outside that row. This separated the summary figures from the graph and made the dashboard easier to read.
+
+Since I was also unsure how to display a line graph on Gradio I asked it to "Give me an example of code for a line graph on Gradio inside of a Block". I then gave me this code which I adapted to my program:
+
+```
+with gr.Blocks() as app:
+    gr.LinePlot(
+        value=history,
+        x="date",
+        y="balance",
+        title="Savings account history",
+        x_title="Date",
+        y_title="Balance ($)",
+    )
+```
