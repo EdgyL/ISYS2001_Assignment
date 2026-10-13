@@ -280,3 +280,126 @@ To check the calculation, I will test an average weekly contribution of $200 wit
 Below you can see a sample input I tested:
 
 <img width="1871" height="637" alt="image" src="https://github.com/user-attachments/assets/2a41654e-bb14-42bd-8a31-90b2e7f5f06a" />
+
+## Entry 7: Project future savings
+The next feature I want to implement is a projection showing how the user's savings could grow over time. The user will be able to edit the starting balance, weekly contribution, annual interest rate and projection length.
+
+To begin with, the starting balance will default to the current balance calculated from their CSV, and the weekly contribution will default to their historical average weekly contribution. The annual interest rate will default to 5% as an example assumption, and the projection length will default to 5 years.
+
+I asked ChatGPT how I could calculate the interest each week based on the annual interest rate. It suggested treating the input as a nominal annual interest rate, dividing it by 100 to convert the percentage into a decimal, then dividing by 52 to obtain the weekly rate. Multiplying the current balance by this weekly rate gives the interest for that week. Adding this interest to the balance allows it to earn further interest in subsequent weeks.
+
+Here is the output:
+
+<img width="800" height="698" alt="image" src="https://github.com/user-attachments/assets/92f1ccb7-3b6d-4092-a83f-94fd77fed1b2" />
+
+Therefore, for this initial version, I will assume there are 52 weeks in a year, the interest rate stays constant and contributions are added at the end of each week. This means interest is calculated on the existing balance before the weekly contribution is added.
+
+The logic for each week would be:
+- `weekly_rate = annual_rate / 100 / 52`
+- `interest = balance * weekly_rate`
+- `balance = balance + interest + weekly_amount`
+
+The pseudocode for implementing this would look like:
+```text
+FUNCTION project_savings(starting_balance, weekly_amount, annual_rate, years)
+    SET balance to starting_balance
+    CALCULATE weekly_rate as annual_rate / 100 / 52
+    CALCULATE total_weeks as years * 52
+
+    CREATE history list containing week 0 and starting_balance
+
+    FOR each week from 1 to total_weeks
+        CALCULATE interest as balance * weekly_rate
+        ADD interest to balance
+        ADD weekly_amount to balance
+
+        ADD week and updated balance to history
+
+    CALCULATE total_contributions as weekly_amount * total_weeks
+    CALCULATE interest_earned as balance - starting_balance - total_contributions
+
+    CONVERT history into a DataFrame
+
+    RETURN balance, total_contributions, interest_earned and history
+```
+
+To display this in Gradio, I will add four editable inputs:
+
+| Input | Default value |
+|---|---|
+| Starting balance ($) | Current balance calculated from the CSV |
+| Weekly contribution ($) | Average weekly contribution calculated from the CSV |
+| Annual interest rate (%) | 5% |
+| Projection length (years) | 5 years |
+
+An “Update projection” button will run the function using these inputs and display the projected balance, total future contributions, interest earned and a line graph.
+
+I also decided to include a “Return to defaults” button. This will allow users to play around with different values or projections and then restore the original settings. However the calculated CSV values will be kept separate from the editable projection inputs so changing the starting balance or weekly contribution does not overwrite the defaults.
+
+The pseudocode for this would be:
+```
+inside gradio BLOCKS
+    WHEN Return to defaults is clicked
+        SET starting balance to calculated current balance
+        SET weekly contribution to calculated weekly average
+        SET annual interest rate to 5
+        SET projection length to 5
+
+FUNCTION reset_projection_defaults(current_balance, weekly_average)
+    IF current balance is null
+        SET current balance to 0
+
+    IF weekly average is null
+        SET weekly average to 0
+
+    return current balance, weekly average, 5% annual rate, 5 years projection length
+```
+
+To implement this I would have to add a new function that can resupply the values after the user clicks "Return to defaults", this means I will also have to check for the case where the current balance and weekly average haven't been set as the user never submitted a CSV. Therefore as seen in the pseudocode above, we set the value to 0 if this is true.
+
+After restoring the defaults, the user can click “Update projection” to recalculate the results.
+
+As I didn't have the best idea of using Gradio to update a graph as the user clicks the button I needed to find some documentation for this. For this I found some documentation on this:
+- https://gradio.app/guides/blocks-and-event-listeners
+
+With this I added an `update_button` and `reset_button` for the previously explained features.
+
+```python
+update_button.click(
+    fn=project_savings,
+    inputs=[starting_balance, weekly_amount, annual_rate, years],
+    outputs=[
+        projected_balance,
+        total_contributions,
+        interest_earned,
+        projection_graph,
+    ],
+)
+
+reset_button.click(
+    fn=reset_projection_defaults,
+    inputs=[current_balance, weekly_avg],
+    outputs=[starting_balance, weekly_amount, annual_rate, years],
+)
+```
+
+After testing this I ran into a problem or more of a bug. When the CSV was loaded it wouldn't actually add the default values that the `reset_button` sets. 
+
+Therefore the starting values just displayed:
+- Starting balance: $0
+- Weekly contribution: $0
+- Annual interest rate: 5%
+- Projection length: 5 years
+
+As I wasn't sure how to make it update it from the start without clicking the `reset_button`, I asked ChatGPT to help me figure out how I might implement this.
+
+Here is the output below:
+
+<img width="792" height="543" alt="image" src="https://github.com/user-attachments/assets/03cb9bf5-6772-46a2-b406-ae4df6582e53" />
+
+
+Now using this assistance I added this into my code which then worked!
+
+See below:
+
+<img width="1858" height="759" alt="image" src="https://github.com/user-attachments/assets/208f9d41-1ab0-4f4f-b17e-22c036efbbb8" />
