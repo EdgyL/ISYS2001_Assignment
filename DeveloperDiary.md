@@ -417,5 +417,72 @@ I tested this using a sample CSV, and it displayed the following:
 
 <img width="1236" height="759" alt="image" src="https://github.com/user-attachments/assets/a1354d0e-ad97-42bc-a85e-ab10cb0094ea" />
 
+# Entry 9: Error handling
 
+After finishing my features I realised that the `load_csv()` function doesn't provide any error handling if the CSV provided doesn't contain the necessary columns of data.
+
+Now I knew I needed to make some checks before reading the file into a Dataframe to avoid errors. For this I wrote some new logic for the error handling, from experience I knew checking that the file actually existed was necessary, I also needed to wrap the reading of the file in a try-except to catch any errors that are thrown. 
+
+```
+load_csv(file_path)
+    CHECK file exists
+
+    TRY reading CSV
+        IF read fails
+            DISPLAY error message to user
+
+    READ the CSV at file_path into a DataFrame
+
+    RETURN the DataFrame
+```
+
+I asked ChatGPT to assist in implementing this, as shown below:
+
+<img width="543" height="433" alt="image" src="https://github.com/user-attachments/assets/97ab19e5-6387-4186-a597-9e749585a72e" />
+
+However I was not happy with this output as I realised I needed to also check that the CSV contained the necessary columns of data.
+
+There was also the fact of ensuring dates were converted to the correct datetime format, numbers were non-negative or invalid, converting the amount column into numbers, checking for any empty values, checking there is only one opening balance in the account and that its the first transaction and transactions are sorted by date earliest-latest.
+
+Here is the updated pseudocode:
+
+```
+load_csv(file_path)
+    CHECK file exists
+
+    TRY reading CSV into Dataframe
+        IF read fails
+            DISPLAY error message to user
+    
+    CHECK CSV contains [date, transaction_type, amount] (desc is optional)
+    CONVERT dates into datetime values
+    CONVERT amounts into numbers
+    CHECK amounts not negative
+    CHECK transaction types are recognised
+    CHECK there is exactly one opening balance
+
+    SORT transactions by date
+    CHECK first transaction is the opening balance
+
+    RETURN the Dataframe
+```
+-  All `CHECKS` should return an error and display this to the user
+
+When asking ChatGPT to help me implement this pseudocode it became clear that some of this was too complicated to implement and it would be better off assuming the user enters a CSV with a valid transaction history.
+
+For example ChatGPT gave me this code block which I couldn't really understand.
+
+<img width="533" height="336" alt="image" src="https://github.com/user-attachments/assets/c66109d3-636f-4337-b01b-aea891273f97" />
+
+Therefore I decided to simplify it by checking if the file was valid and checking the Dataframe created had the relevant columns, see the screenshot below:
+
+<img width="544" height="448" alt="image" src="https://github.com/user-attachments/assets/0cac9ad2-0fe6-4fe8-82c1-dab7ad0db917" />
+
+
+Through reading the gradio documentation I learned that you can make alerts when an error is tripped with `raise gr.Error("Error description")` 
+- https://gradio.app/guides/alerts
+
+ChatGPT also suggested that I use the `.success()` instead of `.then()` for my projection function as seen below, after reading through the referenced documentation I decided that this made sense to add.
+
+<img width="532" height="238" alt="Screenshot 2026-10-14 at 10 52 42 am" src="https://github.com/user-attachments/assets/eafc463b-3dd0-4892-8406-b3f614b33093" />
 
