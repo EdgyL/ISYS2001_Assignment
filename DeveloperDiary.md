@@ -403,3 +403,19 @@ Now using this assistance I added this into my code which then worked!
 See below:
 
 <img width="1858" height="759" alt="image" src="https://github.com/user-attachments/assets/208f9d41-1ab0-4f4f-b17e-22c036efbbb8" />
+
+## Entry 8: Fixing up some UI issues
+I have identified that the projected values aren't easy to read as they don't display in a format that makes it easy to tell whether the number is in ten or hundreds of thousands. To fix this I asked ChatGPT "How can I change my `project_savings()` function to export numbers in monetary formatted string, such as $1,000,000 not just 1000000. {pasted my `project_savings()` code}"
+
+It supplied this output:
+
+<img width="530" height="672" alt="image" src="https://github.com/user-attachments/assets/e4f419e1-f6c8-4152-87f8-39750d88bb48" />
+
+I then changed over my code to use the supplied string formatting. 
+
+I tested this using a sample CSV, and it displayed the following:
+
+<img width="1236" height="759" alt="image" src="https://github.com/user-attachments/assets/a1354d0e-ad97-42bc-a85e-ab10cb0094ea" />
+
+
+
