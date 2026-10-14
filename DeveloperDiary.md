@@ -649,3 +649,127 @@ As seen in my notebook, I will now display the error results of the test files:
 #### Missing Amount Column
 <img width="1204" height="565" alt="Screenshot 2026-10-14 at 12 16 24 pm" src="https://github.com/user-attachments/assets/fde76b30-6888-4324-a34a-f3a85de25c85" />
 
+
+## Entry 11: Adding a Gemini chatbot
+
+The final feature I want to implement is a Gemini chatbot inside the Gradio dashboard. This will allow the user to ask questions about their savings and understand the results calculated by the program.
+
+For example, the user could ask:
+- “What percentage of my income goes to my savings?”
+- “How much interest will I earn for my current projection?”
+
+To make the responses relevant to the user, I will provide the chatbot with a summary of the figures from the dashboard. This will include their current balance, average weekly contribution, weekly income and projection settings.
+
+Before sending a question, the program will calculate the projection using the current inputs. This will ensure the chatbot receives updated results if the user has changed their settings.
+
+### Defining the chatbot's role
+
+I will give Gemini a system instruction explaining how it should respond:
+
+```
+You are a friendly savings assistant helping users understand
+their savings dashboard.
+
+Use the supplied dashboard figures when answering questions.
+Explain calculations using simple language.
+
+Distinguish historical account figures from future projections.
+Projections assume a constant interest rate and are not guaranteed.
+
+If information is missing, explain what is needed instead of
+inventing values.
+```
+
+### Planning the logic
+
+The pseudocode for this would look like:
+
+```
+FUNCTION chat_with_gemini(message, chat_history, dashboard_inputs)
+    CHECK the message is not empty
+
+    CALCULATE projection using the current inputs
+
+    CREATE a summary of the dashboard figures
+    INCLUDE the projection assumptions
+
+    PREPARE the system instruction
+    INCLUDE previous conversation messages
+    INCLUDE the dashboard summary and user's question
+
+    SEND request to Gemini
+
+    IF the request fails
+        DISPLAY a helpful error message
+    ELSE
+        RETURN Gemini's response
+```
+
+As stated in the assignment specifications, I'll keep the API key in Colab Secrets so it is not written directly into the notebook or included when I share my code.
+
+### Displaying the chatbot
+
+I will add a chat section below the existing dashboard. The user will be able to enter a question and see the response.
+
+### Testing the chatbot
+
+I will test it using the sample data from my earlier tests. For example, with an average weekly contribution of $100 and weekly income of $1,000, it should explain that the user contributes 10% of their income.
+
+I will also check that it:
+- Uses updated figures after projection inputs change.
+- Responds appropriately when information is missing.
+- Supports follow-up questions.
+- Displays a helpful error if the API request fails.
+
+Since the wording of responses can vary, I will manually check the accuracy of the figures and explanations and record the results with screenshots.
+
+Here is the sample output of my chat history:
+```
+user: What percentage of my income am goes to my savings?
+
+assistant: Hello! I'd be happy to help you with that.
+
+Based on your current dashboard, the percentage of your income going to your savings is **not available**. 
+
+This is because the weekly income you entered is currently set to zero. If you'd like to see this percentage, you can update your entered weekly income in your dashboard settings!
+
+user: Can you try that again
+
+assistant: Hello again! Let's take another look at your savings dashboard.
+
+Based on your latest numbers:
+* **Weekly Income:** $1,000.00
+* **Average Weekly Deposits:** $197.69
+
+That means you are currently saving **19.77%** of your income! That's a great chunk to be setting aside each week. 
+
+Please note, this is based on your historical account figures. If you'd ever like to see how those savings might grow in the future, your projections estimate that with a 5% annual interest rate over 5 years, your balance could reach **$72,012.97**. (Just keep in mind that projections are estimates, assuming 52 weeks a year with weekly compounding and contributions added at the end of each week, and aren't guaranteed returns!)
+
+Let me know if you have any other questions about your dashboard!
+```
+
+As mentioned in the notebook, I will show evidence of testing the sample stated:
+<img width="1196" height="447" alt="image" src="https://github.com/user-attachments/assets/a2003646-550b-4071-b72d-6b886d23dbf9" />
+- Testing 0% interest
+
+<img width="1190" height="448" alt="image" src="https://github.com/user-attachments/assets/857b6b34-7858-496b-a431-cb1fc04a9758" />
+- Testing 5% interest
+
+<img width="1238" height="494" alt="image" src="https://github.com/user-attachments/assets/18c32299-bf0a-48a5-8f84-0344db3f69c3" />
+- I tested memory by first not entering a value for my income and then asking a follow up question to try answer my previous query
+
+### ChatGPT Helping
+While making this I asked ChatGPT to generate me a `SYSTEM_INSTRUCTION` for the chatbot given the context of my diary above. This can be seen above.
+
+It also provided me with documentation of how to understand the code I was writing.
+
+- https://ai.google.dev/api/generate-content
+- https://gradio.app/docs/gradio/chatinterface
+- https://gradio.app/guides/creating-a-chatbot-fast
+
+I did however get it to help me with the part where I needed to format the strings as seen below:
+
+
+<img width="533" height="342" alt="image" src="https://github.com/user-attachments/assets/e2312dfb-9c23-4fb3-a6b3-b11faf796b9f" />
+
+
