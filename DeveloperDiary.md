@@ -417,7 +417,7 @@ I tested this using a sample CSV, and it displayed the following:
 
 <img width="1236" height="759" alt="image" src="https://github.com/user-attachments/assets/a1354d0e-ad97-42bc-a85e-ab10cb0094ea" />
 
-# Entry 9: Error handling
+## Entry 9: Error handling
 
 After finishing my features I realised that the `load_csv()` function doesn't provide any error handling if the CSV provided doesn't contain the necessary columns of data.
 
@@ -485,4 +485,167 @@ Through reading the gradio documentation I learned that you can make alerts when
 ChatGPT also suggested that I use the `.success()` instead of `.then()` for my projection function as seen below, after reading through the referenced documentation I decided that this made sense to add.
 
 <img width="532" height="238" alt="Screenshot 2026-10-14 at 10 52 42 am" src="https://github.com/user-attachments/assets/eafc463b-3dd0-4892-8406-b3f614b33093" />
+
+## Entry 10: Adding asserts and test cases
+
+After implementing the main calculations and basic CSV error handling, I now need to check that my functions return the correct results. Previously, I mainly tested through the Gradio interface. Adding assertions will let me compare the actual outputs against specific expected values.
+
+### Testing the calculations
+
+I will start with a small set of transactions that I can calculate by hand:
+
+| Date | Transaction type | Amount |
+|---|---|---:|
+| 2026-01-01 | opening_balance | $1,000 |
+| 2026-01-08 | deposit | $200 |
+| 2026-01-15 | deposit | $200 |
+| 2026-01-22 | withdrawal | $100 |
+| 2026-01-29 | interest | $5 |
+
+The expected current balance is:
+
+```
+Current balance = 1000 + 200 + 200 - 100 + 5
+Current balance = $1,305
+```
+
+The historical period is 28 days, or 4 weeks. Only deposits count towards the average weekly contribution:
+
+```
+Average weekly contribution = 400 / 4
+Average weekly contribution = $100
+```
+
+I can create this data directly in the notebook and check both results:
+
+```python
+test_data = pd.DataFrame({
+    "date": [
+        "2026-01-01",
+        "2026-01-08",
+        "2026-01-15",
+        "2026-01-22",
+        "2026-01-29",
+    ],
+    "transaction_type": [
+        "opening_balance",
+        "deposit",
+        "deposit",
+        "withdrawal",
+        "interest",
+    ],
+    "amount": [1000, 200, 200, 100, 5],
+})
+
+assert calculate_balance(test_data) == 1305
+assert calculate_average_weekly(test_data) == 100
+```
+
+This example also checks that weeks without deposits are included in the average and that interest is not counted as a contribution.
+
+For the historical graph, I will check every running balance rather than only checking that a DataFrame was returned:
+
+```python
+history = calculate_balance_history(test_data)
+
+assert history["balance"].tolist() == [
+    1000, 1200, 1400, 1300, 1305
+]
+```
+
+### Testing income percentages and defaults
+
+I will check a normal income percentage calculation, along with missing and zero income:
+
+```python
+assert calculate_contribution_percentage(200, 1000) == 20
+assert calculate_contribution_percentage(0, 1000) == 0
+assert calculate_contribution_percentage(200, 0) is None
+assert calculate_contribution_percentage(200, None) is None
+assert calculate_contribution_percentage(None, 1000) is None
+```
+
+I will also check that the reset function returns the historical figures when they are available and uses zero when they are missing:
+
+```python
+assert reset_projection_defaults(1305, 100) == (1305, 100, 5, 5)
+assert reset_projection_defaults(None, None) == (0, 0, 5, 5)
+```
+
+### Testing future projections
+
+For the projection, I will use the example from Entry 7: a starting balance of $1,000 and contributions of $200 per week for one year with no interest.
+
+Since my function now returns formatted strings, the assertions need to compare against those strings:
+
+```python
+balance, contributions, interest, history = project_savings(
+    1000, 200, 0, 1
+)
+
+assert balance == "$11,400.00"
+assert contributions == "$10,400.00"
+assert interest == "$0.00"
+
+assert len(history) == 53
+assert history["balance"].iloc[0] == 1000
+assert history["balance"].iloc[-1] == 11400
+```
+
+The history should contain 53 records because it includes the starting balance at week 0 and the balance after each of the 52 weeks.
+
+To check that interest compounds, I will also use a 5.2% nominal annual rate with no contributions. This gives a weekly rate of 0.1%. Starting with $1,000, the balance should be $1,001 after the first week and $1,002.001 after the second:
+
+```python
+balance, contributions, interest, history = project_savings(
+    1000, 0, 5.2, 1
+)
+
+assert round(history["balance"].iloc[1], 3) == 1001.000
+assert round(history["balance"].iloc[2], 3) == 1002.001
+assert contributions == "$0.00"
+```
+
+Rounding avoids a test failing because of small floating-point differences.
+
+### Testing error cases
+
+For `load_csv()`, I will test:
+- A valid CSV containing the required columns.
+- No file provided.
+- A file path that does not exist.
+- A completely empty file.
+- A CSV missing a required column.
+
+
+
+As I wasn't sure how to test `load_csv()` empty file and missing column logic I decided to ask ChatGPT to help me design some test cases for this. However the response it gave me I felt was out of scope as seen in the screenshot below:
+
+<img width="531" height="368" alt="image" src="https://github.com/user-attachments/assets/be10e5f8-0378-4217-9f49-35e53dea8cb6" />
+
+As it asks to import a library that I have never used before and run tests using temp files inside of python. Instead I decided that it would be better to make my own CSV files for the cases where I needed to test the contents of the file.
+
+However after consulting with ChatGPT on this idea it approved that this was a good idea for the test cases where data such as columns were missing, but proposed that using this method can't test the cases where a `None` is returned if the file path isn't valid.
+
+See below for the referenced solution:
+
+<img width="550" height="465" alt="image" src="https://github.com/user-attachments/assets/72b1d233-d419-4027-b692-32aa1be71c09" />
+
+As seen in my notebook, I will now display the error results of the test files:
+
+### Screenshots of CSV uploads
+#### Valid CSV
+<img width="941" height="757" alt="image" src="https://github.com/user-attachments/assets/92782137-d6d7-4c89-9c6a-6a0e88afd1e3" />
+
+#### Empty CSV
+<img width="1203" height="562" alt="image" src="https://github.com/user-attachments/assets/74f03341-8214-48b9-b750-d86ef84b4d3e" />
+
+#### Missing Date Column
+<img width="1201" height="563" alt="Screenshot 2026-10-14 at 12 15 22 pm" src="https://github.com/user-attachments/assets/ba5fff2b-40b6-4e33-ab0e-9571f5cc5031" />
+
+#### Missing Transaction Column
+<img width="1200" height="562" alt="Screenshot 2026-10-14 at 12 15 55 pm" src="https://github.com/user-attachments/assets/963629ff-cd23-4959-87a5-2875c870b8c8" />
+
+#### Missing Amount Column
+<img width="1204" height="565" alt="Screenshot 2026-10-14 at 12 16 24 pm" src="https://github.com/user-attachments/assets/fde76b30-6888-4324-a34a-f3a85de25c85" />
 
